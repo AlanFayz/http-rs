@@ -31,7 +31,9 @@ fn is_safe_path(user_path: &str) -> bool {
     true
 }
 
-fn global_route(request: HttpRequest) -> Pin<Box<dyn Future<Output = HttpResponse> + Send>> {
+fn global_route(
+    request: HttpRequest
+) -> Pin<Box<dyn Future<Output = HttpResponse> + Send>> {
     return Box::pin(async move {
         let stripped_path = {
             if let Some(p) = request.path.strip_prefix("/") {
@@ -44,7 +46,6 @@ fn global_route(request: HttpRequest) -> Pin<Box<dyn Future<Output = HttpRespons
         if !is_safe_path(stripped_path) {
             return HttpResponse::forbidden("cannot access that path");
         }
-
 
         let contents = get_file_bytes(stripped_path).await;
 
@@ -74,7 +75,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let server = Server::new(port, ip);
 
-    let mut router = Router::new();
+    let mut router: Router = Router::new(None);
     router.get("*", Box::new(global_route));
 
     server.run(router).await?;

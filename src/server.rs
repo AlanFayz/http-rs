@@ -1,11 +1,8 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use tokio::{
-    fs::{self},
-    io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter},
+    io::{AsyncWriteExt, BufReader},
     net::{TcpListener, TcpStream},
-    sync::Mutex,
-    time::timeout,
 };
 
 use crate::{http::*, router::*};
@@ -13,11 +10,6 @@ use crate::{http::*, router::*};
 pub struct Server {
     port: u16,
     ip: String,
-}
-
-async fn get_file_bytes(path: &str) -> tokio::io::Result<Vec<u8>> {
-    let contents = fs::read(path).await?;
-    Ok(contents)
 }
 
 impl Server {
@@ -28,7 +20,10 @@ impl Server {
         }
     }
 
-    pub async fn run(&self, router: Router) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn run<T: Send + Sync + 'static>(
+        &self,
+        router: Router<T>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let addr = format!("{}:{}", self.ip, self.port.to_string());
         let listener = TcpListener::bind(addr).await?;
         let router = Arc::new(router);
@@ -45,9 +40,9 @@ impl Server {
         }
     }
 
-    async fn handle_connection(
+    async fn handle_connection<T>(
         socket: TcpStream,
-        router: &Arc<Router>,
+        router: &Arc<Router<T>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut reader = BufReader::new(socket);
 
