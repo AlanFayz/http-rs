@@ -1,0 +1,15 @@
+[package]
+name = "http-rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1.49.0", features = ["full"] }
+
+[lib]
+name = "http_rs"
+path = "src/lib.rs"
+
+[[bin]]
+name = "http_rs_cli"
+path = "src/main.rs"
