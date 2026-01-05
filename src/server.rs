@@ -52,11 +52,10 @@ impl Server {
         let mut reader = BufReader::new(socket);
 
         let request = HttpRequest::parse(&mut reader).await?;
-        let mut response = router.fetch(request).await.unwrap_or(HttpResponse::new(
-            "HTTP/1.1",
-            401,
-            "NOT FOUND",
-        ));
+        let mut response = router
+            .fetch(request)
+            .await
+            .unwrap_or(HttpResponse::not_found("route not found"));
 
         let mut socket = reader.into_inner();
         socket.write_all(&response.get_bytes()).await?;

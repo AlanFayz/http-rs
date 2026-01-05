@@ -180,11 +180,7 @@ mod tests {
 
     fn mock_handler(body: &'static str) -> Handler {
         Box::new(move |_req| {
-            Box::pin(async move {
-                let mut res = HttpResponse::new("HTTP/1.1", 200, "OK");
-                res.set_body(body.to_string().as_bytes());
-                res
-            })
+            Box::pin(async move { HttpResponse::body(body.to_string().as_bytes().to_vec(), None) })
         })
     }
 
@@ -243,9 +239,7 @@ mod tests {
                 Box::pin(async move {
                     let p_id = req.params.get("post_id").unwrap();
                     let c_id = req.params.get("comment_id").unwrap();
-                    let mut res = HttpResponse::new("HTTP/1.1", 200, "OK");
-                    res.set_body(format!("{}:{}", p_id, c_id).as_bytes());
-                    res
+                    HttpResponse::body(format!("{}:{}", p_id, c_id).as_bytes().to_vec(), None)
                 })
             }),
         );

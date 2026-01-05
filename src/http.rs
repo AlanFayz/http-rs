@@ -39,6 +39,30 @@ pub struct HttpResponse {
     pub body: Vec<u8>,
 }
 
+macro_rules! define_response_helpers {
+    ($(($name:ident, $http_code:expr, $status_text:expr, $content_type:expr)),*) => {
+        $(
+            pub fn $name(t: &str) -> HttpResponse {
+                let mut response = HttpResponse::new("HTTP/1.1", $http_code, $status_text);
+                let bytes = t.as_bytes();
+
+                response.insert_header("Content-Type", $content_type);
+                response.insert_header("Content-Length", bytes.len().to_string().as_str());
+                response.set_body(bytes);
+
+                return response;
+            }
+        )*
+    };
+    ($(($name:ident, $http_code:expr, $status_text:expr)),*) => {
+        $(
+            pub fn $name() -> HttpResponse {
+                HttpResponse::new("HTTP/1.1", $http_code, $status_text)
+            }
+        )*
+    };
+}
+
 fn parse_query_params(params: &str) -> Option<HashMap<String, Option<String>>> {
     let params = params
         .split('&')
@@ -66,7 +90,7 @@ fn parse_query_params(params: &str) -> Option<HashMap<String, Option<String>>> {
 impl Eq for HttpMethod {}
 
 impl HttpResponse {
-    pub fn new(version: &str, status_code: u16, status_text: &str) -> HttpResponse {
+    fn new(version: &str, status_code: u16, status_text: &str) -> HttpResponse {
         HttpResponse {
             version: version.to_string(),
             status_code,
@@ -102,6 +126,46 @@ impl HttpResponse {
 
         response.append(&mut self.body);
         return response;
+    }
+
+    define_response_helpers!(
+        (text, 200, "OK", "text/plain; charset=UTF-8"),
+        (html, 200, "OK", "text/html; charset=UTF-8"),
+        (json, 200, "OK", "application/json; charset=UTF-8"),
+        (bad_request, 400, "Bad Request", "text/plain; charset=UTF-8"),
+        (
+            unauthorized,
+            401,
+            "Unauthorized",
+            "text/plain; charset=UTF-8"
+        ),
+        (forbidden, 403, "Forbidden", "text/plain; charset=UTF-8"),
+        (not_found, 404, "Not Found", "text/plain; charset=UTF-8"),
+        (
+            internal_err,
+            500,
+            "Internal Server Error",
+            "text/plain; charset=UTF-8"
+        )
+    );
+
+    define_response_helpers!((no_content, 204, "No Content"));
+
+    pub fn redirect(url: &str) -> HttpResponse {
+        let mut res = HttpResponse::new("HTTP/1.1", 302, "Found");
+        res.insert_header("Location", url);
+        return res;
+    }
+
+    pub fn body(bytes: Vec<u8>, content_type: Option<&str>) -> HttpResponse {
+        let mut res = HttpResponse::new("HTTP/1.1", 200, "OK");
+
+        if let Some(content_type) = content_type {
+            res.insert_header("Content-Type", content_type);
+        }
+
+        res.set_body(&bytes);
+        return res;
     }
 }
 

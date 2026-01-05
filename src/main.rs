@@ -42,21 +42,18 @@ fn global_route(request: HttpRequest) -> Pin<Box<dyn Future<Output = HttpRespons
         };
 
         if !is_safe_path(stripped_path) {
-            return HttpResponse::new("HTTP/1.1", 401, "BAD PATH");
+            return HttpResponse::forbidden("cannot access that path");
         }
+
 
         let contents = get_file_bytes(stripped_path).await;
 
         if let Err(_) = contents {
-            return HttpResponse::new("HTTP/1.1", 401, "BAD");
+            return HttpResponse::not_found("file not found");
         }
+
         let contents = contents.unwrap();
-
-        let mut response = HttpResponse::new("HTTP/1.1", 200, "OK");
-        response.insert_header("Content-Length", &contents.len().to_string());
-        response.set_body(&contents);
-
-        return response;
+        return HttpResponse::body(contents, None);
     });
 }
 
