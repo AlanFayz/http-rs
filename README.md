@@ -1,6 +1,6 @@
 # http-rs
 
-A custom, asynchronous HTTP server and routing engine built from scratch in Rust. This project serves as a deep dive into the mechanics of the HTTP/1.1 protocol, asynchronous networking with `tokio`, and a radix tree for the routing.
+A custom, asynchronous HTTP server and routing engine built from scratch in Rust. 
 
 ## Usage Modes
 
