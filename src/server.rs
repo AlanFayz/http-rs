@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use tokio::{
     fs::{self},
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter},
     net::{TcpListener, TcpStream},
     sync::Mutex,
     time::timeout,
@@ -46,27 +46,19 @@ impl Server {
     }
 
     async fn handle_connection(
-        mut socket: TcpStream,
+        socket: TcpStream,
         router: &Arc<Router>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut buffer = vec![0; 1024];
+        let mut reader = BufReader::new(socket);
 
-        let result = timeout(Duration::from_secs(5), socket.read(&mut buffer)).await??;
-
-        if result == 0 {
-            return Ok(());
-        }
-
-        let request_str = String::from_utf8_lossy(&buffer[..result]);
-        let lines: Vec<String> = request_str.lines().map(|s| s.to_string()).collect();
-
-        let request = HttpRequest::parse(lines)?;
+        let request = HttpRequest::parse(&mut reader).await?;
         let mut response = router.fetch(request).await.unwrap_or(HttpResponse::new(
             "HTTP/1.1",
             401,
             "NOT FOUND",
         ));
 
+        let mut socket = reader.into_inner();
         socket.write_all(&response.get_bytes()).await?;
         return Ok(());
     }
